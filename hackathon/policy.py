@@ -12,8 +12,11 @@ class Policy:
     def run(self, agent):
         pos = agent.state.pos
         pos.requires_grad_(True)
-        V = self.EnvP(pos)
+        V = self.env.scenario.sample(pos)
         dVdx = torch.autograd.grad(V.sum(), pos)[0]
         dVdx_mag = dVdx.norm(dim=-1, keepdim=True)
         dVdx_dir = dVdx / dVdx_mag
-        return dVdx_dir
+        mask = torch.any(dVdx_dir.isnan() | dVdx_dir.isinf(), dim=-1)
+        control = dVdx_dir.clamp(min=-agent.u_range, max=agent.u_range)
+        control[mask] = torch.rand(self.world.batch_dim, 2)[mask] * 2 - 1
+        return control

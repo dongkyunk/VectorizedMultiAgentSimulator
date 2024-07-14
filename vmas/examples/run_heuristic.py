@@ -43,7 +43,7 @@ def run_heuristic(
     step = 0
     obs = env.reset()
     total_reward = 0
-    for _ in range(n_steps):
+    for i in range(n_steps):
         step += 1
         actions = [None] * len(obs)
         for i in range(len(obs)):

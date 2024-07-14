@@ -26,8 +26,6 @@ class Scenario(BaseScenario):
         self.x_semidim = self.xdim - self.agent_radius
         self.y_semidim = self.ydim - self.agent_radius
 
-        self.EnvP = kwargs.pop("P", lambda x: torch.ones(*x.shape[:-1], 1))
-
         # Make world
         world = World(
             batch_dim,
@@ -44,6 +42,9 @@ class Scenario(BaseScenario):
             )
 
             world.add_agent(agent)
+
+        self.EnvP = kwargs.pop("P", lambda x: torch.ones(*x.shape[:-1], 1))
+        self.EnvT = Trajectory(batch_dim=batch_dim, agents=world.agents, device=device)
 
         return world
 
@@ -83,16 +84,21 @@ class Scenario(BaseScenario):
         env_index=0,
     ):
         pos = torch.tensor(pos).to(self.world.device)
-        return self.EnvP(pos, env_index=env_index)
+        prob_P = self.EnvP(pos, env_index=env_index)
+        prob_T = self.EnvT.get_prob(pos, env_index=env_index)
+        return prob_P * prob_T
 
     def sample(
         self,
         pos,
     ):
-        pass
+        prob_P = self.EnvP(pos)
+        prob_T = self.EnvT.get_prob(pos)
+        return prob_P * prob_T
 
 
     def reward(self, agent: Agent) -> Tensor:
+        self.EnvT.update_traj(agent, agent.state.pos)
         return torch.zeros(self.world.batch_dim, 1)
 
     def observation(self, agent: Agent) -> Tensor:
@@ -152,6 +158,31 @@ class Scenario(BaseScenario):
 
         return geoms
 
+
+class Trajectory:
+
+    def __init__(self, batch_dim, agents, device):
+        self.batch_dim = batch_dim
+        self.agents = agents
+        self.std = 0.01
+        self.device = device
+        self.reset()
+
+    def reset(self):
+        self.traj = {agent: torch.zeros(self.batch_dim, 0, 2, device=self.device) for agent in self.agents}
+
+    def update_traj(self, agent, pos):
+        self.traj[agent] = torch.cat([self.traj[agent], pos.unsqueeze(1)], dim=1)
+
+    def get_prob(self, pos, env_index=None):
+        if env_index is None:
+            all_pos = torch.cat([self.traj[agent][:,:-1] for agent in self.agents], dim=1)
+        else:
+            all_pos = torch.cat([self.traj[agent][env_index,:-1] for agent in self.agents], dim=0).unsqueeze(0)
+        pos_diff = pos.unsqueeze(1) - all_pos
+        prob_point = torch.exp(-pos_diff.norm(dim=-1)**2 / self.std)
+        out = torch.prod(1-prob_point, dim=1)
+        return out
 
 if __name__ == "__main__":
     render_interactively(__file__, control_two_agents=True)
