@@ -7,17 +7,20 @@ from vmas.simulator.utils import save_video
 from policy import Policy
 
 
-def run_heuristic(
+def run(
     n_steps: int = 200,
     n_envs: int = 32,
-    env_kwargs: dict = None,
     render: bool = False,
     save_render: bool = False,
     device: str = "cpu",
 ):
-    assert not (save_render and not render), "To save the video you have to render it"
-    if env_kwargs is None:
-        env_kwargs = {}
+
+    P = lambda x: torch.ones(*x.shape[:-1], 1)
+
+    env_kwargs = {
+        "P": P
+    }
+
     scenario_name = "search"
 
     env = make_env(
@@ -67,7 +70,7 @@ def run_heuristic(
 
 
 if __name__ == "__main__":
-    run_heuristic(
+    run(
         n_envs=2,
         n_steps=200,
         render=True,
