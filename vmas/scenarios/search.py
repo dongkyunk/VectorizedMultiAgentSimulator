@@ -80,9 +80,10 @@ class Scenario(BaseScenario):
     def sample_single_env(
         self,
         pos,
+        env_index=0,
     ):
         pos = torch.tensor(pos).to(self.world.device)
-        return self.P(pos)
+        return self.P(pos, env_index=env_index)
 
     def sample(
         self,

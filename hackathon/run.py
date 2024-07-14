@@ -5,6 +5,10 @@ import torch
 from vmas import make_env
 from vmas.simulator.utils import save_video
 from policy import Policy
+from torch.distributions.normal import Normal
+from torch.distributions.categorical import Categorical
+from torch.distributions.independent import Independent
+from torch.distributions.mixture_same_family import MixtureSameFamily
 
 
 def run(
@@ -15,10 +19,8 @@ def run(
     device: str = "cpu",
 ):
 
-    P = lambda x: torch.ones(*x.shape[:-1], 1)
-
     env_kwargs = {
-        "P": P
+        "P": EnvP(n_envs)
     }
 
     scenario_name = "search"
@@ -69,10 +71,44 @@ def run(
     )
 
 
+class EnvP:
+
+    def __init__(self, batch_dim):
+        self.batch_dim = batch_dim
+        self.n_modes = 6
+        self.dist = None
+        self.reset()
+
+    def __call__(self, *args, **kwargs):
+        return self.forward(*args, **kwargs)
+
+    def reset(self):
+        loc = torch.rand(self.batch_dim, self.n_modes, 2) * 2 - 1
+        std = torch.exp(torch.randn(self.batch_dim, self.n_modes, 2) / 4 - 0.6)
+        comp = Independent(Normal(loc=loc, scale=std), 1)
+        weights = Categorical(torch.ones(self.batch_dim, self.n_modes))
+        gmm = MixtureSameFamily(weights, comp)
+        self.dist = gmm
+
+    def forward(self, x, env_index=None):
+        if env_index is None:
+            return torch.exp(self.dist.log_prob(x))
+        else:
+            comp_dist = self.dist._component_distribution
+            mix_dist = self.dist._mixture_distribution
+            loc = comp_dist.base_dist.loc[env_index]
+            std = comp_dist.base_dist.scale[env_index]
+            weights = mix_dist.probs[env_index]
+            comp_new = Independent(Normal(loc=loc, scale=std), 1)
+            mix_new = Categorical(weights)
+            dist = MixtureSameFamily(mix_new, comp_new)
+            return torch.exp(dist.log_prob(x))
+
+
 if __name__ == "__main__":
     run(
         n_envs=2,
-        n_steps=200,
+        n_steps=500,
         render=True,
         save_render=False,
     )
