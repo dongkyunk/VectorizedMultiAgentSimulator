@@ -10,7 +10,6 @@ from torch.distributions import MultivariateNormal
 from vmas import render_interactively
 from vmas.simulator.core import Agent, Entity, Line, Sphere, World
 from vmas.simulator.scenario import BaseScenario
-from vmas.simulator.sensors import Lidar
 from vmas.simulator.utils import Color, ScenarioUtils, X, Y
 
 
@@ -20,7 +19,6 @@ class Scenario(BaseScenario):
         self.shared_rew = kwargs.pop("shared_rew", True)
 
         self.comms_range = kwargs.pop("comms_range", 0.0)
-        self.lidar_range = kwargs.pop("lidar_range", 0.2)
         self.agent_radius = kwargs.pop("agent_radius", 0.025)
         self.xdim = kwargs.pop("xdim", 1)
         self.ydim = kwargs.pop("ydim", 1)
@@ -67,20 +65,7 @@ class Scenario(BaseScenario):
                 render_action=True,
                 collide=self.collisions,
                 shape=Sphere(radius=self.agent_radius),
-                sensors=(
-                    [
-                        Lidar(
-                            world,
-                            angle_start=0.05,
-                            angle_end=2 * torch.pi + 0.05,
-                            n_rays=12,
-                            max_range=self.lidar_range,
-                            entity_filter=entity_filter_agents,
-                        ),
-                    ]
-                    if self.collisions
-                    else None
-                ),
+                sensors=(),
             )
 
             world.add_agent(agent)
@@ -280,7 +265,6 @@ class Scenario(BaseScenario):
         observations = [
             agent.state.pos,
             agent.state.vel,
-            agent.sensors[0].measure(),
         ]
 
         for delta in [
