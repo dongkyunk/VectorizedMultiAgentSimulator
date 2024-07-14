@@ -26,7 +26,7 @@ class Scenario(BaseScenario):
         self.x_semidim = self.xdim - self.agent_radius
         self.y_semidim = self.ydim - self.agent_radius
 
-        self.P = kwargs.pop("P", lambda x: torch.ones(*x.shape[:-1], 1))
+        self.EnvP = kwargs.pop("P", lambda x: torch.ones(*x.shape[:-1], 1))
 
         # Make world
         world = World(
@@ -83,7 +83,7 @@ class Scenario(BaseScenario):
         env_index=0,
     ):
         pos = torch.tensor(pos).to(self.world.device)
-        return self.P(pos, env_index=env_index)
+        return self.EnvP(pos, env_index=env_index)
 
     def sample(
         self,

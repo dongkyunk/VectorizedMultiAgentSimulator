@@ -7,8 +7,13 @@ class Policy:
         self.env = env
         self.world = world
         self.device = device
+        self.EnvP = self.env.scenario.EnvP
 
     def run(self, agent):
-        action = torch.randn(self.world.batch_dim, self.world.dim_p, device=self.device)
-        action = torch.clamp(action, min=-agent.action.u_range, max=agent.action.u_range)
-        return action
+        pos = agent.state.pos
+        pos.requires_grad_(True)
+        V = self.EnvP(pos)
+        dVdx = torch.autograd.grad(V.sum(), pos)[0]
+        dVdx_mag = dVdx.norm(dim=-1, keepdim=True)
+        dVdx_dir = dVdx / dVdx_mag
+        return dVdx_dir
