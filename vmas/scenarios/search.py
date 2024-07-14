@@ -38,8 +38,7 @@ class Scenario(BaseScenario):
         for i in range(self.n_agents):
             agent = Agent(
                 name=f"agent_{i}",
-                render_action=True,
-                collide=True,
+                collide=False,
                 shape=Sphere(radius=self.agent_radius),
             )
 
@@ -110,7 +109,14 @@ class Scenario(BaseScenario):
                 f=lambda pos: self.sample_single_env(pos, env_index=0),
                 plot_range=(self.xdim, self.ydim),
                 cmap_alpha=0.5,
-            )
+                cmap_name='Blues'
+            ),
+            '''render_function_util(
+                f=lambda pos: self.sample_single_env(pos, env_index=0),
+                plot_range=(self.xdim, self.ydim),
+                cmap_alpha=0.5,
+                cmap_name='Reds'
+            )'''
         ]
 
         # Perimeter
