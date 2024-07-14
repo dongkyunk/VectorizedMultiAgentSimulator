@@ -1,5 +1,4 @@
 import torch
-from update_prob import update_prob
 
 class Policy:
 
