@@ -18,7 +18,7 @@ def run_heuristic(
     assert not (save_render and not render), "To save the video you have to render it"
     if env_kwargs is None:
         env_kwargs = {}
-    scenario_name = "sampling"
+    scenario_name = "search"
 
     env = make_env(
         scenario=scenario_name,

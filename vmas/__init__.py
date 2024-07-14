@@ -41,6 +41,7 @@ scenarios = sorted(
         "multi_give_way",
         "navigation",
         "sampling",
+        "search",
         "wind_flocking",
         "road_traffic",
     ]
